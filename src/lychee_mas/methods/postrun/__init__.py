@@ -24,6 +24,14 @@ from .base import (
     CreditAssigner,
     FailureAttributor,
 )
+from .counterfactual import (
+    ArithmeticReplayTask,
+    LocalizationResult,
+    RepairProposal,
+    ReplayStep,
+    ReplayTrace,
+    locate_first_effective_fix,
+)
 from .store import TraceStore
 
 
@@ -75,4 +83,10 @@ __all__ = [
     "BinarySearchAttributor",
     "AttributionGuidedCredit",
     "agentracer",
+    "ArithmeticReplayTask",
+    "LocalizationResult",
+    "RepairProposal",
+    "ReplayStep",
+    "ReplayTrace",
+    "locate_first_effective_fix",
 ]
