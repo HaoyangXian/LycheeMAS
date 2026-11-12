@@ -38,7 +38,9 @@
 分 subset（step_exact）：agentic 42.5% → 46.5%（+4.0pp, p=0.011）；coding 10.2% → 9.4%（−0.8pp, p=1.0）；
 math 42.9% → 44.4%（+1.6pp, p=1.0）。
 
-## 4. 剂量-反应（同一批 200 条，逐条配对）
+## 4. 剂量-反应（两个独立 run，同一批 200 条，逐条配对）
+
+**Run A（12 步，`grpo_trend_4gpu_full`）**
 
 | policy | step_exact | joint_exact | 相对裸模型 | p |
 |---|---:|---:|---:|---:|
@@ -47,8 +49,26 @@ math 42.9% → 44.4%（+1.6pp, p=1.0）。
 | step-10 | 43.0% | 40.0% | −1.5pp | 0.728 |
 | step-12 | 47.0% | 44.0% | +2.5pp | 0.473 |
 
-三个 checkpoint 的平均效应：step **+0.67pp**（95% CI [−3.67, +5.33]），joint +0.33pp（CI [−4.00, +4.67]）。
-checkpoint 间跨度 4.0pp，**不单调**。
+三个 checkpoint 平均效应：step **+0.67pp**（95% CI [−3.67, +5.33]），joint +0.33pp（CI [−4.00, +4.67]）。
+
+**Run B（20 updates，`repro_full_20261111`，HF rollout，独立重训）**
+
+| policy | step_exact | joint_exact | parse | 相对裸模型 | p |
+|---|---:|---:|---:|---:|---:|
+| 裸模型 | 44.5% | 42.0% | 92.0% | — | — |
+| step-5 | 43.5% | 41.5% | 91.5% | −1.0pp | 0.851 |
+| step-10 | 46.5% | 43.0% | 90.5% | +2.0pp | 0.585 |
+| step-15 | 43.0% | 38.5% | 92.0% | −1.5pp | 0.743 |
+| step-20 | 44.5% | 42.0% | 92.0% | +0.0pp | 1.000 |
+
+四个 checkpoint 平均效应：step **−0.13pp**（95% CI [−4.50, +4.13]），joint −0.75pp（CI [−4.88, +3.50]）。
+**起点与终点的 step 完全相同（44.5% → 44.5%）**，中间步骤在 ±2pp 内摆动。
+
+相邻 checkpoint 的两两比较也都不显著：s5→s10 +3.0pp（p=0.345）、s10→s15 −3.5pp（p=0.296）、
+s15→s20 +1.5pp（p=0.728）。checkpoint 间跨度 3.5pp，**不单调**。
+
+两个 run 合起来共 7 个 checkpoint，没有一个点显著高于裸模型，平均效应分别为 +0.67pp 与 −0.13pp，
+置信区间都跨 0。
 
 ## 5. 噪声底（A/A）
 
@@ -92,6 +112,15 @@ python scripts/reproduction/agentracer_paired_eval.py \
 
 # 3) 重算金标分布与常数基线
 python scripts/reproduction/agentracer_base_rates.py --records /path/validation_canonical.jsonl
+
+# 4) 重算多 checkpoint 曲线（Run B 的四个点）
+python scripts/reproduction/agentracer_checkpoint_curve.py \
+  --records /path/validation_canonical.jsonl \
+  --baseline predictions/baseline.predictions.jsonl \
+  --checkpoints s5=predictions/full20_s5.predictions.jsonl \
+              s10=predictions/full20_s10.predictions.jsonl \
+              s15=predictions/full20_s15.predictions.jsonl \
+              s20=predictions/full20_s20.predictions.jsonl
 ```
 
 完整产物（逐条预测、重算表格、sha256 清单）保存在实验机
@@ -101,5 +130,6 @@ python scripts/reproduction/agentracer_base_rates.py --records /path/validation_
 ## 9. 结论
 
 - 适配层可用：6 个契约测试通过，归因链路可在框架内正常运行。
-- 方法主张未获支持：训练带来的提升无法与 checkpoint 间波动区分。
+- 方法主张未获支持：两个独立 run 共 7 个 checkpoint，平均效应 +0.67pp 与 −0.13pp，
+  置信区间均跨 0；20 updates 那轮的起点与终点完全相同（44.5% → 44.5%）。
 - 指标需要修正后才能用于任何"复现成功"的声明（见第 6 节）。
